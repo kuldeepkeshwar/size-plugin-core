@@ -1,0 +1,23 @@
+{
+  "name": "size-plugin-store",
+  "version": "0.0.1",
+  "description": "store used by size-plugin",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kuldeepkeshwar/size-plugin-store.git"
+  },
+  "author": "kuldeepkeshwar@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kuldeepkeshwar/size-plugin-store/issues"
+  },
+  "homepage": "https://github.com/kuldeepkeshwar/size-plugin-store#readme",
+  "dependencies": {
+    "axios": "^0.19.0",
+    "ci-env": "^1.10.0"
+  }
+}
