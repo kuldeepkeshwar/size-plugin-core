@@ -5,15 +5,31 @@ const minimatch = require("minimatch");
 const gzipSize = require("gzip-size");
 const chalk = require("chalk");
 const prettyBytes = require("pretty-bytes");
+const brotliSize = require("brotli-size");
 const { publishSizes, publishDiff } = require("size-plugin-store");
 const fs = require("fs-extra");
 const { noop, toFileMap, toMap, dedupe } = require("./util");
 
 const glob = promisify(globPromise);
 
+brotliSize.file = (path, options) => {
+  return new Promise((resolve, reject) => {
+    const stream = fs.createReadStream(path);
+    stream.on("error", reject);
+
+    const brotliStream = stream.pipe(brotliSize.stream(options));
+    brotliStream.on("error", reject);
+    brotliStream.on("brotli-size", resolve);
+  });
+};
+const compression = {
+  brotli: brotliSize,
+  gzip: gzipSize
+};
 /**
  * `core(options)`
  * @param {Object} options
+ * @param {string} [options.compression] compression method(gzip/brotli) to use, default: 'gzip'
  * @param {string} [options.pattern] minimatch pattern of files to track
  * @param {string} [options.exclude] minimatch pattern of files NOT to track
  * @param {string} [options.filename] file name to save filesizes to disk
@@ -27,12 +43,14 @@ const glob = promisify(globPromise);
  */
 module.exports = function Core(_options) {
   const options = _options || {};
-  options.pattern = options.pattern || "**/*.{mjs,js,css,html}";
+  options.pattern = options.pattern || "**/*.{mjs,js,jsx,css,html}";
   options.filename = options.filename || "size-plugin.json";
   options.writeFile = options.writeFile !== false;
   options.stripHash = options.stripHash || noop;
   options.filepath = path.join(process.cwd(), options.filename);
   options.mode = options.mode || process.env.NODE_ENV;
+  options.compression = options.compression || "gzip";
+  const compressionSize = compression[options.compression];
 
   async function readFromDisk(filename) {
     try {
@@ -82,25 +100,28 @@ module.exports = function Core(_options) {
     const files = await glob(options.pattern, { cwd, ignore: options.exclude });
 
     const sizes = await Promise.all(
-      files.map(file => gzipSize.file(path.join(cwd, file)).catch(() => null))
+      filterFiles(files).map(file =>
+        compressionSize.file(path.join(cwd, file)).catch(() => null)
+      )
     );
 
     return toMap(files.map(filename => options.stripHash(filename)), sizes);
   }
-  async function outputSizes(assets, outputPath) {
-    // console.log(assets, outputPath);
-    // map of filenames to their previous size
-    // Fix #7 - fast-async doesn't allow non-promise values.
-    const sizesBefore = await load(outputPath);
+  function filterFiles(files) {
     const isMatched = minimatch.filter(options.pattern);
     const isExcluded = options.exclude
       ? minimatch.filter(options.exclude)
       : () => false;
-    const assetNames = Object.keys(assets).filter(
-      file => isMatched(file) && !isExcluded(file)
-    );
+    return files.filter(file => isMatched(file) && !isExcluded(file));
+  }
+  async function outputSizes(assets, outputPath) {
+    // map of filenames to their previous size
+    // Fix #7 - fast-async doesn't allow non-promise values.
+    const sizesBefore = await load(outputPath);
+    const assetNames = filterFiles(Object.keys(assets));
+
     const sizes = await Promise.all(
-      assetNames.map(name => gzipSize(assets[name].source))
+      assetNames.map(name => compressionSize(assets[name].source))
     );
 
     // map of de-hashed filenames to their final size
