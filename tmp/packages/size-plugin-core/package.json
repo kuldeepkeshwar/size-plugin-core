@@ -1,0 +1,31 @@
+{
+  "name": "size-plugin-core",
+  "version": "0.0.1",
+  "description": "core module for size-plugin",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "chalk": "^2.4.2",
+    "glob": "^7.1.4",
+    "gzip-size": "^5.1.1",
+    "minimatch": "^3.0.4",
+    "pretty-bytes": "^5.3.0",
+    "size-plugin-store": "^0.0.1",
+    "util.promisify": "^1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kuldeepkeshwar/size-plugin-core.git"
+  },
+  "keywords": [
+    "size-plugin"
+  ],
+  "author": "kuldeepkeshwar@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kuldeepkeshwar/size-plugin-core/issues"
+  },
+  "homepage": "https://github.com/kuldeepkeshwar/size-plugin-core#readme"
+}
