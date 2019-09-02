@@ -4,6 +4,7 @@
   "description": "core module for size-plugin",
   "main": "index.js",
   "scripts": {
+    "doc": "documentation readme index.js -a public --section Options",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -21,12 +22,19 @@
     "url": "git+https://github.com/kuldeepkeshwar/size-plugin-core.git"
   },
   "keywords": [
-    "size-plugin"
+    "webpack plugin",
+    "rollup plugin",
+    "file size",
+    "gzip size",
+    "bundle size"
   ],
   "author": "kuldeepkeshwar@gmail.com",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/kuldeepkeshwar/size-plugin-core/issues"
   },
-  "homepage": "https://github.com/kuldeepkeshwar/size-plugin-core#readme"
+  "homepage": "https://github.com/kuldeepkeshwar/size-plugin-core#readme",
+  "devDependencies": {
+    "documentation": "^12.1.1"
+  }
 }
