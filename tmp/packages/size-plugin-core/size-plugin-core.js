@@ -1,31 +1,43 @@
-const path = require("path");
-const promisify = require("util.promisify");
-const globPromise = require("glob");
-const minimatch = require("minimatch");
-const gzipSize = require("gzip-size");
-const chalk = require("chalk");
-const prettyBytes = require("pretty-bytes");
-const brotliSize = require("brotli-size");
-const { publishSizes, publishDiff } = require("size-plugin-store");
-const fs = require("fs-extra");
-const { noop, toFileMap, toMap, dedupe } = require("./util");
+const path = require('path');
+const promisify = require('util.promisify');
+const globPromise = require('glob');
+const minimatch = require('minimatch');
+const gzipSize = require('gzip-size');
+const chalk = require('chalk');
+const prettyBytes = require('pretty-bytes');
+const brotliSize = require('brotli-size');
+const { publishSizes, publishDiff } = require('size-plugin-store');
+const fs = require('fs-extra');
+const { noop, toFileMap, toMap, dedupe } = require('./util');
 
 const glob = promisify(globPromise);
 
 brotliSize.file = (path, options) => {
   return new Promise((resolve, reject) => {
     const stream = fs.createReadStream(path);
-    stream.on("error", reject);
+    stream.on('error', reject);
 
     const brotliStream = stream.pipe(brotliSize.stream(options));
-    brotliStream.on("error", reject);
-    brotliStream.on("brotli-size", resolve);
+    brotliStream.on('error', reject);
+    brotliStream.on('brotli-size', resolve);
   });
 };
 const compression = {
   brotli: brotliSize,
   gzip: gzipSize
 };
+
+
+async function readFromSizeFile(filename) {
+  try {
+    const oldStats = await fs.readJSON(filename);
+    return oldStats.sort((a, b) => b.timestamp - a.timestamp);
+  } catch (err) {
+    return [];
+  }
+}
+
+
 /**
  * `SizePluginCore(options)`
  * @param {Object} options
@@ -41,121 +53,100 @@ const compression = {
  * @param {(data:Data)=>string?} [options.decorateAfter] custom function to decorate all output
  * @public
  */
-module.exports = function Core(options) {
-  const opt = options || {};
-  opt.pattern = opt.pattern || "**/*.{mjs,js,jsx,css,html}";
-  opt.filename = opt.filename || "size-plugin.json";
-  opt.writeFile = opt.writeFile !== false;
-  opt.stripHash = opt.stripHash || noop;
-  opt.filepath = path.join(process.cwd(), opt.filename);
-  opt.mode = opt.mode || process.env.NODE_ENV;
-  opt.compression = opt.compression || "gzip";
-  const compressionSize = compression[opt.compression];
 
-  async function readFromDisk(filename) {
-    try {
-      const oldStats = await fs.readJSON(filename);
-      return oldStats.sort((a, b) => b.timestamp - a.timestamp);
-    } catch (err) {
-      return [];
-    }
+class Core {
+  constructor(options) {
+    const opt = options || {};
+    opt.pattern = opt.pattern || '**/*.{mjs,js,jsx,css,html}';
+    opt.filename = opt.filename || 'size-plugin.json';
+    opt.writeFile = opt.writeFile !== false;
+    opt.stripHash = opt.stripHash || noop;
+    opt.filepath = path.join(process.cwd(), opt.filename);
+    opt.mode = opt.mode || process.env.NODE_ENV;
+    opt.compression = opt.compression || 'gzip';
+    this.compressionSize = compression[opt.compression];
+    this.options = opt;
   }
-  async function writeToDisk(filename, stats) {
-    if (
-      opt.mode === "production" &&
-      stats.files.some(file => file.diff !== 0)
-    ) {
-      const data = await readFromDisk(filename);
-      data.unshift(stats);
-      if (opt.writeFile) {
-        await fs.ensureFile(filename);
-        await fs.writeJSON(filename, data);
-      }
-      opt.publish && (await publishSizes(data, opt.filename));
-    }
+  filterFiles(files) {
+    const isMatched = minimatch.filter(this.options.pattern);
+    const isExcluded = this.options.exclude
+      ? minimatch.filter(this.options.exclude)
+      : () => false;
+    return files.filter(file => isMatched(file) && !isExcluded(file));
   }
-  async function save(files) {
-    const stats = {
-      timestamp: Date.now(),
-      files: files.map(file => ({
-        filename: file.name,
-        previous: file.sizeBefore,
-        size: file.size,
-        diff: file.size - file.sizeBefore
-      }))
-    };
-    opt.publish && (await publishDiff(stats, opt.filename));
-    opt.save && (await opt.save(stats));
-    await writeToDisk(opt.filepath, stats);
+  async readFromDisk(cwd) {
+    const files = await glob(this.options.pattern, {
+      cwd,
+      ignore: this.options.exclude
+    });
+
+    const sizes = await Promise.all(
+      this.filterFiles(files).map(file =>
+        this.compressionSize.file(path.join(cwd, file)).catch(() => null)
+      )
+    );
+    return toMap(
+      files.map(filename => this.options.stripHash(filename)),
+      sizes
+    );
   }
-  async function load(outputPath) {
-    const data = await readFromDisk(opt.filepath);
+  async getPreviousSizes(outputPath) {
+    const data = await readFromSizeFile(this.options.filepath);
     if (data.length) {
       const [{ files }] = data;
       return toFileMap(files);
     }
-    return getSizes(outputPath);
+    return this.readFromDisk(outputPath);
   }
-  async function getSizes(cwd) {
-    const files = await glob(opt.pattern, { cwd, ignore: opt.exclude });
+  async getSizes(assets) {
+    const fileNames = this.filterFiles(Object.keys(assets));
 
     const sizes = await Promise.all(
-      filterFiles(files).map(file =>
-        compressionSize.file(path.join(cwd, file)).catch(() => null)
-      )
+      fileNames.map(name => this.compressionSize(assets[name].source))
     );
-
-    return toMap(files.map(filename => opt.stripHash(filename)), sizes);
-  }
-  function filterFiles(files) {
-    const isMatched = minimatch.filter(opt.pattern);
-    const isExcluded = opt.exclude
-      ? minimatch.filter(opt.exclude)
-      : () => false;
-    return files.filter(file => isMatched(file) && !isExcluded(file));
-  }
-  async function outputSizes(assets, outputPath) {
-    // map of filenames to their previous size
-    // Fix #7 - fast-async doesn't allow non-promise values.
-    const sizesBefore = await load(outputPath);
-    const assetNames = filterFiles(Object.keys(assets));
-
-    const sizes = await Promise.all(
-      assetNames.map(name => compressionSize(assets[name].source))
-    );
-
     // map of de-hashed filenames to their final size
-    const finalSizes = toMap(
-      assetNames.map(filename => opt.stripHash(filename)),
+    const sizeMap = toMap(
+      fileNames.map(filename => this.options.stripHash(filename)),
       sizes
     );
-
+    return sizeMap;
+  }
+  async getDiff(sizesBefore, sizes) {
     // get a list of unique filenames
-    const files = [
+    const fileNames = [
       ...Object.keys(sizesBefore),
-      ...Object.keys(finalSizes)
+      ...Object.keys(sizes)
     ].filter(dedupe);
-
-    const width = Math.max(...files.map(file => file.length));
-    let output = "";
-    const items = [];
-    for (const name of files) {
-      const size = finalSizes[name] || 0;
-      const sizeBefore = sizesBefore[name] || 0;
+    const files = [];
+    for (const filename of fileNames) {
+      const size = sizes[filename] || 0;
+      const sizeBefore = sizesBefore[filename] || 0;
       const delta = size - sizeBefore;
-      const msg = new Array(width - name.length + 2).join(" ") + name + " ⏤  ";
+      files.push({ filename, size, delta });
+    }
+    return files;
+  }
+  async printSizes(files) {
+    const width = Math.max(...files.map(file => file.filename.length));
+    let output = '';
+    const items = [];
+    for (const file of files) {
+      const name = file.filename;
+      const size = file.size;
+      const delta = file.delta;
+      const msg = new Array(width - name.length + 2).join(' ') + name + ' ⏤  ';
       const color =
         size > 100 * 1024
-          ? "red"
+          ? 'red'
           : size > 40 * 1024
-          ? "yellow"
+          ? 'yellow'
           : size > 20 * 1024
-          ? "cyan"
-          : "green";
+          ? 'cyan'
+          : 'green';
       let sizeText = chalk[color](prettyBytes(size));
-      let deltaText = "";
+      let deltaText = '';
       if (delta && Math.abs(delta) > 1) {
-        deltaText = (delta > 0 ? "+" : "") + prettyBytes(delta);
+        deltaText = (delta > 0 ? '+' : '') + prettyBytes(delta);
         if (delta > 1024) {
           sizeText = chalk.bold(sizeText);
           deltaText = chalk.red(deltaText);
@@ -164,10 +155,9 @@ module.exports = function Core(options) {
         }
         sizeText += ` (${deltaText})`;
       }
-      let text = msg + sizeText + "\n";
+      let text = msg + sizeText + '\n';
       const item = {
         name,
-        sizeBefore,
         size,
         sizeText,
         delta,
@@ -176,27 +166,67 @@ module.exports = function Core(options) {
         color
       };
       items.push(item);
-      if (opt.decorateItem) {
-        text = opt.decorateItem(text, item) || text;
+      if (this.options.decorateItem) {
+        text = this.options.decorateItem(text, item) || text;
       }
       output += text;
     }
-    if (opt.decorateAfter) {
+    if (this.options.decorateAfter) {
       const opts = {
         sizes: items,
-        raw: { sizesBefore, sizes: finalSizes },
+        raw: files,
         output
       };
-      const text = opt.decorateAfter(opts);
+      const text = this.options.decorateAfter(opts);
       if (text) {
-        output += "\n" + text.replace(/^\n/g, "");
+        output += '\n' + text.replace(/^\n/g, '');
       }
     }
-    await save(items);
     return output;
   }
-  return { outputSizes, options: opt };
-};
+  async uploadSizes(files) {
+    const stats = {
+      timestamp: Date.now(),
+      files: files
+    };
+    this.options.save && (await this.options.save(stats));
+    this.options.publish && (await publishDiff(stats, this.options.filename));
+    if (
+      this.options.mode === 'production' &&
+      stats.files.some(file => file.delta !== 0)
+    ) {
+      const data = await readFromSizeFile(this.options.filepath);
+      data.unshift(stats);
+      if (this.options.writeFile) {
+        await fs.ensureFile(this.options.filename);
+        await fs.writeJSON(this.options.filename, data);
+      }
+      this.options.publish && (await publishSizes(data, this.options.filename));
+    }
+  }
+  async execute(assets, outputPath) {
+    const sizesBefore = await (
+      this.options.getPreviousSizes || this.getPreviousSizes
+    ).call(this, outputPath);
+    const sizes = await (this.options.getSizes || this.getSizes).call(
+      this,
+      assets
+    );
+    const files = await (this.options.getDiff || this.getDiff).call(
+      this,
+      sizesBefore,
+      sizes
+    );
+    const output = await (this.options.printSizes || this.printSizes).call(
+      this,
+      files
+    );
+    await (this.options.uploadSizes || this.uploadSizes).call(this, files);
+    return output;
+  }
+}
+module.exports = Core;
+
 
 /**
  * @name Item
