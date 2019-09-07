@@ -1,4 +1,5 @@
 # size-plugin-core
+
 Core module for [size-plugin](https://github.com/GoogleChromeLabs/size-plugin)/[rollup-plugin-size](https://github.com/luwes/rollup-plugin-size)
 
 ## Options
@@ -7,14 +8,14 @@ Core module for [size-plugin](https://github.com/GoogleChromeLabs/size-plugin)/[
 
 #### Table of Contents
 
--   [size-plugin-core](#size-plugin-core)
+-   [SizePluginCore](#sizeplugincore)
     -   [Parameters](#parameters)
 -   [Item](#item)
     -   [Properties](#properties)
 -   [Data](#data)
     -   [Properties](#properties-1)
 
-### size-plugin-core
+### SizePluginCore
 
 `SizePluginCore(options)`
 

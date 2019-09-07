@@ -54,7 +54,7 @@ async function readFromSizeFile(filename) {
  * @public
  */
 
-class Core {
+class SizePluginCore {
   constructor(options) {
     const opt = options || {};
     opt.pattern = opt.pattern || '**/*.{mjs,js,jsx,css,html}';
@@ -225,7 +225,7 @@ class Core {
     return output;
   }
 }
-module.exports = Core;
+module.exports = SizePluginCore;
 
 
 /**
