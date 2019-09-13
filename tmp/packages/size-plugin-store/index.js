@@ -6,7 +6,7 @@ const SIZE_STORE_ENDPOINT =
   process.env.SIZE_STORE_ENDPOINT || "https://size-store.now.sh";
 
 async function publishDiff(diff, filename) {
-  if (process.env.NODE_ENV !== "test" && ci && event == "pull_request") {
+  if (process.env.NODE_ENV !== "test" && ci ) {
     try {
       const params = { ci, repo, branch, sha, filename, diff };
       await axios.post(`${SIZE_STORE_ENDPOINT}/diff`, params);
@@ -16,7 +16,7 @@ async function publishDiff(diff, filename) {
   }
 }
 async function publishSizes(size, filename) {
-  if (process.env.NODE_ENV !== "test" && ci && event == "push") {
+  if (process.env.NODE_ENV !== "test" && ci) {
     try {
       const params = { ci, repo, branch, sha, filename, size };
       await axios.post(`${SIZE_STORE_ENDPOINT}/size`, params);
