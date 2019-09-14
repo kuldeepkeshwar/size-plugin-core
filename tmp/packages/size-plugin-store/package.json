@@ -1,6 +1,6 @@
 {
   "name": "size-plugin-store",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "store used by size-plugin",
   "main": "index.js",
   "scripts": {
