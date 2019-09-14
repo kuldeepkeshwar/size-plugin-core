@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "doc": "documentation readme index.js -a public --section Options",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 0"
   },
   "dependencies": {
     "brotli-size": "^4.0.0",
@@ -15,7 +15,7 @@
     "gzip-size": "^5.1.1",
     "minimatch": "^3.0.4",
     "pretty-bytes": "^5.3.0",
-    "size-plugin-store": "^0.0.2",
+    "size-plugin-store": "^0.0.4",
     "util.promisify": "^1.0.0"
   },
   "repository": {
