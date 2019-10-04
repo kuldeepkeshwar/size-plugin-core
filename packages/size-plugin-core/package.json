@@ -15,7 +15,7 @@
     "gzip-size": "^5.1.1",
     "minimatch": "^3.0.4",
     "pretty-bytes": "^5.3.0",
-    "size-plugin-store": "^0.0.4",
+    "size-plugin-store": "file:../size-plugin-store",
     "util.promisify": "^1.0.0"
   },
   "repository": {
@@ -34,8 +34,5 @@
   "bugs": {
     "url": "https://github.com/kuldeepkeshwar/size-plugin-core/issues"
   },
-  "homepage": "https://github.com/kuldeepkeshwar/size-plugin-core#readme",
-  "devDependencies": {
-    "documentation": "^12.1.1"
-  }
+  "homepage": "https://github.com/kuldeepkeshwar/size-plugin-core#readme"
 }
