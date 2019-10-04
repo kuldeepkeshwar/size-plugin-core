@@ -127,7 +127,7 @@ class SizePluginCore {
     return files;
   }
   async printSizes(files) {
-    const width = Math.max(...files.map(file => file.filename.length));
+    const width = Math.max(...files.map(file => file.filename.length),this.options.columnWidth);
     let output = '';
     const items = [];
     for (const file of files) {
