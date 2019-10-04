@@ -48,6 +48,7 @@ async function readFromSizeFile(filename) {
  * @param {boolean} [options.publish] option to publish filesizes to size-plugin-store
  * @param {boolean} [options.writeFile] option to save filesizes to disk
  * @param {boolean} [options.mode] option for production/development mode
+ * @param {number} [options.columnWidth] option for add spacing in message
  * @param {function} [options.stripHash] custom function to remove/normalize hashed filenames for comparison
  * @param {(item:Item)=>string?} [options.decorateItem] custom function to decorate items
  * @param {(data:Data)=>string?} [options.decorateAfter] custom function to decorate all output
@@ -127,7 +128,7 @@ class SizePluginCore {
     return files;
   }
   async printSizes(files) {
-    const width = Math.max(...files.map(file => file.filename.length),this.options.columnWidth);
+    const width = Math.max(...files.map(file => file.filename.length),this.options.columnWidth||0);
     let output = '';
     const items = [];
     for (const file of files) {
