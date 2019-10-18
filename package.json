@@ -1,12 +1,9 @@
 {
   "private": true,
+  "workspaces":["packages/*"],
   "devDependencies": {
     "documentation": "^12.1.1",
     "lerna": "^3.16.4"
   },
-  "name": "size-plugin-core",
-  "dependencies": {
-    "size-plugin-core": "file:packages/size-plugin-core",
-    "size-plugin-store": "file:packages/size-plugin-store"
-  }
+  "name": "size-plugin-core"
 }
