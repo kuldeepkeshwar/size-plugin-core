@@ -29,6 +29,7 @@ Core module for [size-plugin](https://github.com/GoogleChromeLabs/size-plugin)/[
     -   `options.publish` **[boolean](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean)?** option to publish filesizes to size-plugin-store
     -   `options.writeFile` **[boolean](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean)?** option to save filesizes to disk
     -   `options.mode` **[boolean](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean)?** option for production/development mode
+    -   `options.columnWidth` **[number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number)?** option for add spacing in message
     -   `options.stripHash` **[function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function)?** custom function to remove/normalize hashed filenames for comparison
 
 ### Item
