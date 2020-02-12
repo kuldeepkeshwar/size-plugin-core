@@ -5,19 +5,20 @@ const minimatch = require('minimatch');
 const gzipSize = require('gzip-size');
 const chalk = require('chalk');
 const prettyBytes = require('pretty-bytes');
-const brotliSize = require('brotli-size');
+const brotliSizePkg = require('brotli-size');
 const { publishSizes, publishDiff } = require('size-plugin-store');
 const fs = require('fs-extra');
 const { noop, toFileMap, toMap, dedupe } = require('./util');
 
 const glob = promisify(globPromise);
 
+const brotliSize = brotliSizePkg.sync;
 brotliSize.file = (path, options) => {
   return new Promise((resolve, reject) => {
     const stream = fs.createReadStream(path);
     stream.on('error', reject);
 
-    const brotliStream = stream.pipe(brotliSize.stream(options));
+    const brotliStream = stream.pipe(brotliSizePkg.stream(options));
     brotliStream.on('error', reject);
     brotliStream.on('brotli-size', resolve);
   });
