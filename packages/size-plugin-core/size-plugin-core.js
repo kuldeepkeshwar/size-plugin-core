@@ -47,7 +47,7 @@ async function readFromSizeFile(filename) {
 /**
  * `SizePluginCore(options)`
  * @param {Object} options
- * @param {string} [options.compression] compression method(gzip/brotli) to use, default: 'gzip'
+ * @param {string} [options.compression] compression method(gzip/brotli/none) to use, default: 'gzip'
  * @param {string} [options.pattern] minimatch pattern of files to track
  * @param {string} [options.exclude] minimatch pattern of files NOT to track
  * @param {string} [options.filename] file name to save filesizes to disk
