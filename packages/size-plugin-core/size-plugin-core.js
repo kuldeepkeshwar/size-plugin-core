@@ -8,7 +8,7 @@ const prettyBytes = require('pretty-bytes');
 const brotliSizePkg = require('brotli-size');
 const { publishSizes, publishDiff } = require('size-plugin-store');
 const fs = require('fs-extra');
-const { noop, toFileMap, toMap, dedupe } = require('./util');
+const { noop, toFileMap, toMap, dedupe, getStripHashedFileSize } = require('./util');
 
 const glob = promisify(globPromise);
 
@@ -92,10 +92,9 @@ class SizePluginCore {
         this.compressionSize.file(path.join(cwd, file)).catch(() => null)
       )
     );
-    return toMap(
-      files.map(filename => this.options.stripHash(filename)),
-      sizes
-    );
+
+   const originSizeMap = toMap(files, sizes);
+   return getStripHashedFileSize(originSizeMap)
   }
   async getPreviousSizes(outputPath) {
     const data = await readFromSizeFile(this.options.filepath);
@@ -112,11 +111,8 @@ class SizePluginCore {
       fileNames.map(name => this.compressionSize(assets[name].source))
     );
     // map of de-hashed filenames to their final size
-    const sizeMap = toMap(
-      fileNames.map(filename => this.options.stripHash(filename)),
-      sizes
-    );
-    return sizeMap;
+    const originSizeMap = toMap(fileNames, sizes);
+    return getStripHashedFileSize(originSizeMap)
   }
   async getDiff(sizesBefore, sizes) {
     // get a list of unique filenames

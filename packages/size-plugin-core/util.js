@@ -23,3 +23,16 @@ function toFileMap(files) {
     }, {});
 }
 exports.toFileMap = toFileMap;
+
+function getStripHashedFileSize(originSizeMap) {
+  return Object.keys(originSizeMap).reduce((acc, currentValue, currentIndex, array) => {
+    const stripedName = this.options.stripHash(currentValue);
+    if(acc[stripedName]) {
+      acc[stripedName] = acc[stripedName] + originSizeMap[currentValue]
+    } else {
+      acc[stripedName] = originSizeMap[currentValue]
+    }
+    return acc
+  }, {})
+}
+exports.getStripHashedFileSize = getStripHashedFileSize;
